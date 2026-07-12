@@ -2,9 +2,10 @@ import type { OrdemServico } from "../types/OrdemServico";
 
 interface ServiceCardProps {
   os: OrdemServico;
+  onMudarStatus: (id: number, novoStatus: OrdemServico["status"]) => void;
 }
 
-export function ServiceCard({ os }: ServiceCardProps) {
+export function ServiceCard({ os, onMudarStatus }: ServiceCardProps) {
   const corStatus =
     os.status === "aberto"
       ? "bg-green-100 text-green-700"
@@ -28,6 +29,18 @@ export function ServiceCard({ os }: ServiceCardProps) {
       <p className="text-sm text-slate-600">
         <span className="font-medium">Defeito:</span> {os.defeito}
       </p>
+
+      <select
+        value={os.status}
+        onChange={(e) =>
+          onMudarStatus(os.id, e.target.value as OrdemServico["status"])
+        }
+        className="border border-slate-300 rounded px-2 py-1 text-sm mt-2"
+      >
+        <option value="aberto">Aberto</option>
+        <option value="em_andamento">Em Andamento</option>
+        <option value="finalizado">Finalizado</option>
+      </select>
     </div>
   );
 }
