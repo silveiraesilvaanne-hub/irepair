@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import type { ServiceOrder, NewServiceOrder } from '../types/ServiceOrder';
+import type { ServiceOrder } from '../types/ServiceOrder';
 import type { Client } from '../types/Client';
+import type { Device } from '../types/Device';
 
 export const ServiceOrders = () => {
   const [serviceOrders, setServiceOrders] = useState<ServiceOrder[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [clientId, setClientId] = useState('');
-  const [device, setDevice] = useState('');
+  const [deviceModel, setDeviceModel] = useState('');
   const [issue, setIssue] = useState('');
 
   useEffect(() => {
@@ -18,12 +20,14 @@ export const ServiceOrders = () => {
   async function fetchData() {
     try {
       setLoading(true);
-      const [ordersResponse, clientsResponse] = await Promise.all([
+      const [ordersResponse, clientsResponse, devicesResponse] = await Promise.all([
         api.get<ServiceOrder[]>('/service-orders'),
         api.get<Client[]>('/clients'),
+        api.get<Device[]>('/devices'),
       ]);
       setServiceOrders(ordersResponse.data);
       setClients(clientsResponse.data);
+      setDevices(devicesResponse.data);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
     } finally {
@@ -32,21 +36,25 @@ export const ServiceOrders = () => {
   }
 
   async function handleSave() {
-    if (clientId === '' || device.trim() === '' || issue.trim() === '') {
+    if (clientId === '' || deviceModel.trim() === '' || issue.trim() === '') {
       alert('Preencha todos os campos.');
       return;
     }
 
-    const newServiceOrder: NewServiceOrder = {
-      clientId: Number(clientId),
-      device,
-      issue,
-    };
-
     try {
-      await api.post('/service-orders', newServiceOrder);
+      const deviceResponse = await api.post<Device>('/devices', {
+        model: deviceModel,
+        clientId: Number(clientId),
+      });
+
+      await api.post('/service-orders', {
+        issue,
+        clientId: Number(clientId),
+        deviceId: deviceResponse.data.id,
+      });
+
       setClientId('');
-      setDevice('');
+      setDeviceModel('');
       setIssue('');
       fetchData();
     } catch (error) {
@@ -65,9 +73,14 @@ export const ServiceOrders = () => {
     }
   }
 
-  function findClientName(clientIdValue: number) {
-    const client = clients.find((c) => c.id === clientIdValue);
+  function findClientName(id: number) {
+    const client = clients.find((c) => c.id === id);
     return client ? client.name : 'Cliente não encontrado';
+  }
+
+  function findDeviceModel(id: number) {
+    const device = devices.find((d) => d.id === id);
+    return device ? device.model : 'Dispositivo não encontrado';
   }
 
   if (loading) {
@@ -94,9 +107,9 @@ export const ServiceOrders = () => {
 
         <input
           type="text"
-          placeholder="Aparelho"
-          value={device}
-          onChange={(e) => setDevice(e.target.value)}
+          placeholder="Modelo do aparelho"
+          value={deviceModel}
+          onChange={(e) => setDeviceModel(e.target.value)}
           className="border border-slate-300 rounded px-3 py-2 text-sm"
         />
         <input
@@ -122,8 +135,10 @@ export const ServiceOrders = () => {
             className="bg-white rounded-lg shadow p-4 flex justify-between items-center border border-slate-200"
           >
             <div>
-              <p className="font-semibold text-slate-800">{findClientName(so.client_id)}</p>
-              <p className="text-sm text-slate-600">{so.device} · {so.issue}</p>
+              <p className="font-semibold text-slate-800">{findClientName(so.clientId)}</p>
+              <p className="text-sm text-slate-600">
+                {findDeviceModel(so.deviceId)} · {so.issue}
+              </p>
               <span className="text-xs text-slate-500">{so.status}</span>
             </div>
             <button
