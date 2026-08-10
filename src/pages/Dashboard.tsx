@@ -35,8 +35,8 @@ export const Dashboard = () => {
         <h2 className="font-semibold text-slate-700">{title}</h2>
         {items.map((so) => (
           <div key={so.id} className="bg-white rounded-lg shadow p-4 border border-slate-200">
-            <p className="font-semibold text-slate-800">{so.device}</p>
-            <p className="text-sm text-slate-600">{so.issue}</p>
+            <p className="font-semibold text-slate-800">{so.issue}</p>
+            <p className="text-sm text-slate-600">{so.status}</p>
           </div>
         ))}
       </div>
